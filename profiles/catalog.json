@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {
+      "id": "so51d-12915929-cpu3-4",
+      "label": "SO-51D · 内核构建12915929 · CPU 3/4",
+      "hardware_device": "SO-51D",
+      "android_api": "35",
+      "kernel": "5.15.170-android13-8-00015-g52ccd9134339-ab12915929",
+      "file": "profiles/so51d-12915929-cpu3-4.glk",
+      "sha256": "234340cc0bb1699f641d15b4409db0213ffcaecdf5ca1b0b042b3f037334b309",
+      "pill_supported": true
+    },
+    {
+      "id": "xperia1v-14546557-cpu0-1",
+      "label": "Xperia 1 V · 内核14546557 · 上游参考 CPU 0/1",
+      "hardware_device": "XQ-DQ72",
+      "hardware_devices": [
+        "XQ-DQ72"
+      ],
+      "android_api": "35",
+      "kernel": "5.15.189-android13-8-00016-g51bba4309aac-ab14546557",
+      "file": "profiles/xperia1v-14546557-cpu0-1.glk",
+      "sha256": "cbe400e9e3f12df645e505a950f1e845750ed73506be3f7eb446affbe6109fac",
+      "pill_supported": false,
+      "evidence_level": "upstream_reference",
+      "evidence_note": "上游登记了这个完整内核，配置已离线核验；此电脑尚无XQ-DQ72实机提权成功记录。",
+      "source_url": "https://github.com/NickJi2019/ghostlock-app/blob/113/app/src/main/assets/kernel_profiles/5.15.189-android13-8-00016-g51bba4309aac-ab14546557.conf"
+    }
+  ]
+}

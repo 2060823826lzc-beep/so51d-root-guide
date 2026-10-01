@@ -1,0 +1,14 @@
+Xperia Experimental Toolbox / Xperia 实验工具箱
+Independent project; not an official Sony or Google product.
+
+This distribution includes a modified GhostLock diagnostic program based on
+YuKongA/ghostlock-app commit b28529cb31ef6cfe597bb8994eec411ef87513ea.
+Upstream Apache-2.0 license and notices are retained. See native/LICENSE and
+native/MODIFICATIONS.md for the origin and modifications.
+
+KernelSU manager and ksud are unmodified upstream v3.3.0 artifacts. Their GPL
+licenses and corresponding source snapshot are provided separately from this
+project's Apache-2.0 code. Other dependencies retain their individual licenses.
+
+See THIRD_PARTY_NOTICES.md and the licenses/ directory. This notice does not
+modify or replace any applicable license.

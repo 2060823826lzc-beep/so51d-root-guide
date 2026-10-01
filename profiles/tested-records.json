@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "schema_version": 1,
+      "id": "builtin-so51d-20260929-215550",
+      "tested_at": "2026-09-29T22:01:28.838476+08:00",
+      "environment": {
+        "hardware_device": "SO-51D",
+        "android_api": "35",
+        "kernel": "5.15.170-android13-8-00015-g52ccd9134339-ab12915929",
+        "build": "67.2.A.3.55 release-keys"
+      },
+      "profile_id": "so51d-12915929-cpu3-4",
+      "profile_sha256": "234340cc0bb1699f641d15b4409db0213ffcaecdf5ca1b0b042b3f037334b309",
+      "native_sha256": "7603c6afcc15998a0bf17081bd3e2585659126a4c3076ed97123454dd2310009",
+      "activation_calls": 1,
+      "root_verified": true,
+      "kernelsu_loaded": true,
+      "same_boot": true,
+      "reboot_observed": false,
+      "five_minute_passed": false,
+      "sample_count": 20,
+      "observation_seconds": 300.0,
+      "outcome": "root_verified",
+      "note": "Root 和 KernelSU 最终已确认；五分钟采样存在系统服务暂时不可用，不计为全部通过。",
+      "evidence_reference": "evidence/builtin-record-provenance.json"
+    }
+  ]
+}

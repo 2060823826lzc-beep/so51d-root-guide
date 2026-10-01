@@ -1,0 +1,15 @@
+{
+  "kernel": "5.15.189-android13-8-00016-g51bba4309aac-ab14546557",
+  "reference_image_sha256": "83a36d57811b16e3742150a72236727300cbceb345850eca6aad0dd826dd0232",
+  "reference_layout_reproduced": true,
+  "elf_base": "0xffffffc008000000",
+  "encoded_bytes": 1036,
+  "encoded_sha256": "cbe400e9e3f12df645e505a950f1e845750ed73506be3f7eb446affbe6109fac",
+  "recommended_cpus": [
+    0,
+    1
+  ],
+  "native_binary_changed": false,
+  "live_root_tested_on_XQ_DQ72": false,
+  "source_url": "https://github.com/NickJi2019/ghostlock-app/blob/113/app/src/main/assets/kernel_profiles/5.15.189-android13-8-00016-g51bba4309aac-ab14546557.conf"
+}

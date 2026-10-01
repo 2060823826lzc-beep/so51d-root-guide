@@ -1,0 +1,16 @@
+* text=auto
+*.py text eol=lf
+*.sh text eol=lf
+*.java text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.cmd text eol=crlf
+*.glk binary
+*.jar binary
+# Preserve third-party license text exactly, including original whitespace.
+licenses/** -text -whitespace
+native/** whitespace=-blank-at-eof
+# Preserve the exact hash-pinned source fields shipped with the alpha.6 profile.
+profiles/so51d-12915929-cpu3-4-native-fields.json -text whitespace=cr-at-eol

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kernel": "5.15.170-android13-8-00015-g52ccd9134339-ab12915929",
+  "packages": [
+    {
+      "name": "so51d-diagnostic-native-20260929-01.zip",
+      "url": "local-build:so51d-observe-20260929-01",
+      "sha256": "ce9ae9b0a7af8fb0b8ac6e2eca17a3bb12b3fbc7a9466e5f66397b15508a2da3",
+      "extract": {
+        "member": "ghostlock-arm64",
+        "name": "ghostlock-arm64",
+        "sha256": "7603c6afcc15998a0bf17081bd3e2585659126a4c3076ed97123454dd2310009"
+      }
+    },
+    {
+      "name": "KernelSU_v3.3.0_32601-release.apk",
+      "url": "https://github.com/tiann/KernelSU/releases/download/v3.3.0/KernelSU_v3.3.0_32601-release.apk",
+      "sha256": "c197060ecb89702e7d54a4c95e29cf5e8d97369bbbb436979ab7fd6bcde7b077",
+      "extract": {
+        "member": "lib/arm64-v8a/libksud.so",
+        "name": "ksud-arm64",
+        "sha256": "99aaa607e9c9da6a0e898366ecf0a14dd67224ea726d952d1ce575e62d3b5c41"
+      }
+    }
+  ],
+  "profile_sha256": "234340cc0bb1699f641d15b4409db0213ffcaecdf5ca1b0b042b3f037334b309",
+  "verified_against_github_asset_digests": "2026-09-28",
+  "profile": "profiles/so51d-12915929-cpu3-4.glk",
+  "profile_note": "CPU 3/4: one successful SO-51D device run on 2026-09-29; not a stability guarantee. Original CPU 0/1 profile retained.",
+  "diagnostic_build": "so51d-observe-20260929-01",
+  "source_commit": "b28529cb31ef6cfe597bb8994eec411ef87513ea",
+  "note": "Independent diagnostic build. No stable-fix claim. Original daily-use project unchanged."
+}

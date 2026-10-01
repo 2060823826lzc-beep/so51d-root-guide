@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "record_id": "builtin-so51d-20260929-215550",
+  "local_source": "SO51D-Root-Diagnostic/logs/20260929-215550-356857",
+  "source_sha256": {
+    "result.json": "15c0d618378de94f43fe6a7ee7e13aa6a397843400397285458f48eafc16866e",
+    "before-state.json": "77e1a43c5bf42c570d356446aa4f6fe168941df72ee7be669243b789cbe8c3fe",
+    "final-state.json": "569198873fe36dc1bc012f38d65724f6c3c2bb6e228ee7e09591b89d38503c37",
+    "observation.json": "53bf9dd83ff69c0ebeb947f4624ec690ae35d02052b0c78057fb12a7c462de34"
+  },
+  "privacy": "Only sanitized environment and outcome fields are bundled. No USB serial, boot UUID, app paths or personal files."
+}

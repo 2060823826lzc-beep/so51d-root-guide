@@ -6,7 +6,9 @@ def root_summary(result):
     if result.get('outcome') == 'cancelled':
         if result.get('display_restore_error'):
             return '已取消，未执行 Root；亮屏设置恢复失败，请重新连接后点击取消常亮。', AMBER
-        return '已取消，未执行 Root；原亮屏设置已恢复。', GREEN
+        if result.get('display_restored'):
+            return '已取消，未执行 Root；原亮屏设置已恢复。', GREEN
+        return '已取消，未执行 Root；本次未修改常亮设置。', GREEN
     if result.get('outcome') == 'already_rooted':
         return '手机已具备 Root，本次已跳过激活。', GREEN
     if result.get('root_currently_verified'):

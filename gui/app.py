@@ -21,7 +21,7 @@ from presentation import root_summary, execution_available
 BG, WHITE, INK, MUTED = '#f4f6fa', '#ffffff', '#172338', '#64748b'
 BLUE, GREEN, AMBER, RED = '#2563eb', '#15803d', '#a16207', '#b91c1c'
 FONT = 'Microsoft YaHei UI'
-TITLE = 'Xperia 工具箱 · 1.3.1 等待与亮屏修正版'
+TITLE = 'Xperia 工具箱 · 1.3.2 常亮可选版'
 
 
 class App(tk.Tk):
@@ -75,7 +75,7 @@ class App(tk.Tk):
         top.pack(fill='x', padx=24, pady=(16, 10))
         self.label(top, '手机检测与 Root 工具箱', size=21, bold=True).pack(anchor='w')
         self.label(top, '先看当前手机与历史测试记录，再自行选择执行。', color=MUTED).pack(anchor='w')
-        self.label(top, '1.3.1 等待与亮屏修正版', size=9, color=BLUE).place(relx=1, y=7, anchor='ne')
+        self.label(top, '1.3.2 常亮可选版', size=9, color=BLUE).place(relx=1, y=7, anchor='ne')
 
         card = tk.Frame(self, bg=WHITE, padx=16, pady=12)
         card.pack(fill='x', padx=24)

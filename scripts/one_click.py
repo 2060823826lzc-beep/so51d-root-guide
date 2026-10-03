@@ -153,9 +153,12 @@ def run(args, out):
             raise RuntimeError('KernelSU 已加载，但 Shell 未获授权。请在管理器检查 Shell 授权；不重复激活。')
         if before['selinux'] != 'Enforcing':
             raise RuntimeError('当前 SELinux 状态异常，停止激活，请先检查既有日志。')
+        display_pending = False
         for pending in (ROOT / 'logs').glob('*/display-restore.json'):
-            if json.loads(pending.read_text(encoding='utf-8')).get('restore_required'):
-                raise RuntimeError('上次的临时亮屏设置尚未恢复。请先双击“恢复亮屏设置.cmd”，再检查手机状态。')
+            try:
+                display_pending |= bool(json.loads(pending.read_text(encoding='utf-8')).get('restore_required'))
+            except (OSError, ValueError):
+                display_pending = True
         if active_ghostlock(d.shell('ps -A -o ARGS')):
             raise RuntimeError('已有 GhostLock 程序运行。停止本次启动，不强杀已有进程。')
         for directory in ['/data/local/tmp/codex-root-audit', REMOTE]:
@@ -166,18 +169,28 @@ def run(args, out):
         marker = markers / (original + '.json')
         if marker.exists():
             raise RuntimeError('电脑已有本次开机的执行记录，停止重复启动。')
-        display_original = d.shell('settings get global stay_on_while_plugged_in')
-        if not re.fullmatch(r'[0-7]', display_original):
-            display_original = None
-            raise RuntimeError('无法确认原亮屏设置，未启动。')
-        save(out / 'display-restore.json', {'original': display_original, 'restore_required': True})
-        d.shell('settings put global stay_on_while_plugged_in 7')
+        result['display_assistance'] = 'skipped'
+        if display_pending:
+            print('存在待恢复或无法读取的常亮记录，跳过自动常亮；不影响 Root。请手动保持手机亮屏。', flush=True)
+        else:
+            try:
+                original_setting = d.shell('settings get global stay_on_while_plugged_in', timeout=5)
+                if not re.fullmatch(r'[0-7]', original_setting):
+                    raise RuntimeError('原常亮设置未确认')
+                # Persist recovery before issuing a write, which may succeed even if ADB times out.
+                save(out / 'display-restore.json', {'original': original_setting, 'restore_required': True})
+                display_original = original_setting
+                d.shell('settings put global stay_on_while_plugged_in 7', timeout=5)
+                result['display_assistance'] = 'enabled'
+            except Exception as exc:
+                result['display_assistance_error'] = str(exc)
+                print('自动常亮不可用，继续 Root 流程；请手动保持手机亮屏。原因：' + str(exc), flush=True)
         while locked(d.shell('dumpsys window policy')):
             if getattr(args, 'gui', False):
                 print('@@UI ' + json.dumps({'event': 'unlock'}, ensure_ascii=False), flush=True)
                 if input().strip().lower() == 'cancel':
                     result['outcome'] = 'cancelled'
-                    print('已取消，未执行 Root；正在恢复原亮屏设置。', flush=True)
+                    print('已取消，未执行 Root。' + ('正在恢复原亮屏设置。' if display_original is not None else '本次未修改常亮设置。'), flush=True)
                     return 0
             else:
                 input('请在手机上解锁并保持桌面可见，完成后按回车继续；Ctrl+C 取消：')
@@ -243,6 +256,7 @@ def run(args, out):
                 if d.shell('settings get global stay_on_while_plugged_in', timeout=5) != display_original:
                     raise RuntimeError('恢复后回读不一致')
                 save(out / 'display-restore.json', {'original': display_original, 'restore_required': False, 'restored_at': now()})
+                result['display_restored'] = True
                 print('已恢复原亮屏设置。')
             except Exception as exc:
                 result['display_restore_error'] = str(exc)

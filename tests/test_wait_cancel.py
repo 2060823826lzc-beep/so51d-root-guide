@@ -14,21 +14,21 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_detection_history import BASE, BOOT, FakeDevice, state
 import one_click
-import device
 import common
+import device
 import registry
 import presentation
 
 
 class WaitCancelTests(unittest.TestCase):
-    def run_flow(self, locked=False, fail_restore=False):
+    def run_flow(self, locked=False, fail_restore=False, original_setting='0', fail_enable=False, pending=False, corrupt_pending=False):
         fake = FakeDevice(BASE, overrides={
             'getprop sys.boot.reason': 'normal', 'cat /proc/uptime': '100 200',
             'pm path --user 0 me.weishu.kernelsu': 'package:/data/test',
             'service check activity': 'Service activity: found',
             'pidof system_server zygote64 zygote': '1 2 3',
             'ps -A -o ARGS': 'sh',
-            'settings get global stay_on_while_plugged_in': '0',
+            'settings get global stay_on_while_plugged_in': original_setting,
             'dumpsys window policy': 'showing=true' if locked else 'showing=false'})
         commands = []
         activated = []
@@ -42,6 +42,8 @@ class WaitCancelTests(unittest.TestCase):
                     return ''
                 if command.startswith('settings put global stay_on_while_plugged_in '):
                     value = command.rsplit(' ', 1)[-1]
+                    if fail_enable and value == '7':
+                        raise RuntimeError('Permission denied')
                     if fail_restore and value == '0':
                         raise RuntimeError('offline')
                     fake.values['settings get global stay_on_while_plugged_in'] = value
@@ -58,17 +60,24 @@ class WaitCancelTests(unittest.TestCase):
             shutil.copy2(one_click.ROOT / 'tools-manifest.json', root / 'tools-manifest.json')
             out = root / 'logs' / 'test'
             out.mkdir(parents=True)
+            if pending or corrupt_pending:
+                old = root / 'logs' / 'old'
+                old.mkdir()
+                (old / 'display-restore.json').write_text('{bad' if corrupt_pending else json.dumps(
+                    {'original': '0', 'restore_required': True}), encoding='utf-8')
             choice = out / 'choice.json'
             choice.write_text(json.dumps(registry.make_confirmation(state(), False)), encoding='utf-8')
             args = argparse.Namespace(check=False, gui=True, confirmation=str(choice))
-            with patch.object(one_click, 'ROOT', root), patch.object(one_click, 'verify_bundle'), patch.object(common, 'verify_payloads'), \
+            with patch.object(one_click, 'ROOT', root), patch.object(one_click, 'verify_bundle'), \
+                 patch.object(common, 'verify_payloads'), \
                  patch.object(one_click.subprocess, 'run', side_effect=fake_run), patch.object(device, 'activate', activate), \
                  patch('builtins.input', return_value='cancel'), \
                  patch.object(one_click.time, 'sleep', side_effect=AssertionError('Unexpected waiting')), \
                  contextlib.redirect_stdout(io.StringIO()):
                 code = one_click.run(args, out)
             result = json.loads((out / 'result.json').read_text(encoding='utf-8'))
-            restore = json.loads((out / 'display-restore.json').read_text(encoding='utf-8'))
+            restore_path = out / 'display-restore.json'
+            restore = json.loads(restore_path.read_text(encoding='utf-8')) if restore_path.exists() else None
             history = list((root / 'history').glob('*.json'))
             row = json.loads(history[0].read_text(encoding='utf-8')) if history else None
             markers = list((root / 'attempts').glob('*.json'))
@@ -99,6 +108,51 @@ class WaitCancelTests(unittest.TestCase):
         self.assertIn('display_restore_error', result)
         self.assertIn('恢复失败', presentation.root_summary(result)[0])
         self.assertEqual(activated, [])
+
+    def test_unknown_original_values_never_block_root_or_write_settings(self):
+        for value in ('null', '', 'Permission denied', '8'):
+            with self.subTest(value=value):
+                code, result, restore, _, _, activated, commands = self.run_flow(original_setting=value)
+                self.assertEqual(code, 0)
+                self.assertEqual(activated, [True])
+                self.assertIsNone(restore)
+                self.assertFalse(any('settings put' in str(command) for command in commands))
+
+    def test_read_failure_never_blocks_root(self):
+        code, result, restore, _, _, activated, commands = self.run_flow(original_setting=RuntimeError('ADB timeout'))
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [True])
+        self.assertIsNone(restore)
+        self.assertFalse(any('settings put' in str(command) for command in commands))
+
+    def test_enable_failure_continues_root_and_attempts_restore(self):
+        code, result, restore, _, _, activated, commands = self.run_flow(fail_enable=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [True])
+        self.assertFalse(restore['restore_required'])
+        self.assertTrue(any('settings put global stay_on_while_plugged_in 0' in str(command) for command in commands))
+
+    def test_pending_restore_does_not_block_root_or_overwrite_setting(self):
+        code, result, restore, _, _, activated, commands = self.run_flow(pending=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [True])
+        self.assertIsNone(restore)
+        self.assertFalse(any('settings put' in str(command) for command in commands))
+
+    def test_corrupt_restore_record_does_not_block_root(self):
+        code, result, restore, _, _, activated, commands = self.run_flow(corrupt_pending=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [True])
+        self.assertIsNone(restore)
+        self.assertFalse(any('settings put' in str(command) for command in commands))
+
+    def test_cancel_after_skipping_display_does_not_claim_restoration(self):
+        code, result, restore, _, markers, activated, _ = self.run_flow(locked=True, original_setting='null')
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [])
+        self.assertEqual(markers, [])
+        self.assertIsNone(restore)
+        self.assertIn('本次未修改', presentation.root_summary(result)[0])
 
 
 if __name__ == '__main__':

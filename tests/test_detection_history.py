@@ -54,6 +54,7 @@ class FakeDevice(device.Device):
             'su -c id': 'not found', 'cat /proc/modules': '',
             'cat /proc/sys/kernel/random/boot_id': BOOT, 'settings get secure navigation_mode': '2',
             'dumpsys window policy': 'showing=false',
+            'settings get global stay_on_while_plugged_in': '0',
             'cmd overlay list --user 0 com.android.systemui': '[ ] android:CodexGesturePill',
             'cmd overlay lookup --user 0 com.android.systemui com.android.systemui:color/navigation_bar_home_handle_dark_color': '#ffffffff',
             'cmd overlay lookup --user 0 com.android.systemui com.android.systemui:color/navigation_bar_home_handle_light_color': '#ff000000',
@@ -64,6 +65,8 @@ class FakeDevice(device.Device):
         self.commands.append(args)
         if args == ('get-state',):
             return 'device'
+        if args == ('get-serialno',):
+            return 'fixture-serial'
         if args[0] == 'shell' and args[1] in self.values:
             value = self.values[args[1]]
             if isinstance(value, Exception):

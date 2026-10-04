@@ -7,6 +7,7 @@ import time
 
 import common
 import device
+import display_settings
 from registry import assess
 from one_click import ProcessLock, ROOT, REMOTE, verify_bundle, locked
 
@@ -64,6 +65,8 @@ def status(d):
              'locked': locked(read('dumpsys window policy')),
              'pill_known': bool(dark and light and overlays)}
     value.update(gesture_state(overlays, dark, light))
+    value['display'] = display_settings.status(d, ROOT)
+    value['checked_at'] = datetime.datetime.now().astimezone().isoformat()
     return value
 
 def change_pill(d, action):
@@ -103,8 +106,21 @@ def change_pill(d, action):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['status', 'hide', 'show', 'restore-display'])
+    parser.add_argument('action', choices=['status', 'hide', 'show', 'restore-display',
+                        'display-enable', 'display-disable', 'display-restore'])
+    parser.add_argument('--quiet', action='store_true', help='仅用于只读自动刷新，不生成运行日志')
     args = parser.parse_args()
+    if args.quiet:
+        if args.action != 'status':
+            parser.error('--quiet 仅用于只读 status')
+        try:
+            with ProcessLock(ROOT / 'running.lock'):
+                value = status(device.Device(str(ROOT / 'platform-tools' / 'adb.exe')))
+            emit('RESULT', {'ok': True, 'action': 'status', 'state': value})
+            return 0
+        except Exception as exc:
+            emit('RESULT', {'ok': False, 'action': 'status', 'error': str(exc)})
+            return 2
     out = ROOT / 'logs' / (datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f') + '-' + args.action)
     out.mkdir(parents=True)
     emit('UI', {'event': 'log_directory', 'path': str(out)})
@@ -125,20 +141,24 @@ def main():
     try:
         verify_bundle()
         d = LoggedDevice(str(ROOT / 'platform-tools' / 'adb.exe'))
-        if args.action == 'restore-display':
-            import restore_display
-            restore_display.main()
-            result.update(ok=True, message='临时亮屏设置已检查并恢复。')
-        else:
-            with ProcessLock(ROOT / 'running.lock'):
-                if args.action == 'status':
-                    result.update(ok=True, state=status(d))
-                else:
-                    result.update(ok=True, **change_pill(d, args.action))
+        with ProcessLock(ROOT / 'running.lock'):
+            if args.action == 'status':
+                result.update(ok=True, state=status(d))
+            elif args.action == 'restore-display':
+                result.update(ok=True, **display_settings.restore_temporary(d, ROOT))
+            elif args.action.startswith('display-'):
+                result.update(ok=True, **display_settings.change_manual(d, ROOT, args.action))
+            else:
+                result.update(ok=True, **change_pill(d, args.action))
         emit('RESULT', result)
         return 0
     except Exception as exc:
         result.update(ok=False, error=str(exc))
+        if args.action.startswith('display-') or args.action == 'restore-display':
+            try:
+                result['display'] = display_settings.status(d, ROOT)
+            except Exception:
+                pass
         emit('RESULT', result)
         return 2
     finally:

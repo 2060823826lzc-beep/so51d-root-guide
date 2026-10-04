@@ -21,7 +21,7 @@ import presentation
 
 
 class WaitCancelTests(unittest.TestCase):
-    def run_flow(self, locked=False, fail_restore=False, original_setting='0', fail_enable=False, pending=False, corrupt_pending=False):
+    def run_flow(self, locked=False, fail_restore=False, original_setting='0', fail_enable=False, pending=False, corrupt_pending=False, keep_awake=True):
         fake = FakeDevice(BASE, overrides={
             'getprop sys.boot.reason': 'normal', 'cat /proc/uptime': '100 200',
             'pm path --user 0 me.weishu.kernelsu': 'package:/data/test',
@@ -42,7 +42,7 @@ class WaitCancelTests(unittest.TestCase):
                     return ''
                 if command.startswith('settings put global stay_on_while_plugged_in '):
                     value = command.rsplit(' ', 1)[-1]
-                    if fail_enable and value == '7':
+                    if fail_enable and value == '2':
                         raise RuntimeError('Permission denied')
                     if fail_restore and value == '0':
                         raise RuntimeError('offline')
@@ -53,7 +53,8 @@ class WaitCancelTests(unittest.TestCase):
             activated.append(True)
             fake.values.update({'su -c id': 'uid=0(root)', 'cat /proc/modules': 'kernelsu 1 0 - Live 0'})
         def fake_run(argv, **kwargs):
-            return subprocess.CompletedProcess(argv, 0, call(None, *argv[2:]), '')
+            commands_start = 3 if argv[1] == '-s' else 2
+            return subprocess.CompletedProcess(argv, 0, call(None, *argv[commands_start:]), '')
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             shutil.copytree(one_click.ROOT / 'profiles', root / 'profiles')
@@ -67,7 +68,7 @@ class WaitCancelTests(unittest.TestCase):
                     {'original': '0', 'restore_required': True}), encoding='utf-8')
             choice = out / 'choice.json'
             choice.write_text(json.dumps(registry.make_confirmation(state(), False)), encoding='utf-8')
-            args = argparse.Namespace(check=False, gui=True, confirmation=str(choice))
+            args = argparse.Namespace(check=False, gui=True, confirmation=str(choice), keep_awake=keep_awake)
             with patch.object(one_click, 'ROOT', root), patch.object(one_click, 'verify_bundle'), \
                  patch.object(common, 'verify_payloads'), \
                  patch.object(one_click.subprocess, 'run', side_effect=fake_run), patch.object(device, 'activate', activate), \
@@ -110,7 +111,7 @@ class WaitCancelTests(unittest.TestCase):
         self.assertEqual(activated, [])
 
     def test_unknown_original_values_never_block_root_or_write_settings(self):
-        for value in ('null', '', 'Permission denied', '8'):
+        for value in ('null', '', 'Permission denied', '16'):
             with self.subTest(value=value):
                 code, result, restore, _, _, activated, commands = self.run_flow(original_setting=value)
                 self.assertEqual(code, 0)
@@ -130,7 +131,8 @@ class WaitCancelTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(activated, [True])
         self.assertFalse(restore['restore_required'])
-        self.assertTrue(any('settings put global stay_on_while_plugged_in 0' in str(command) for command in commands))
+        self.assertTrue(result['display_restored'])
+        self.assertTrue(any('settings get global stay_on_while_plugged_in' in str(command) for command in commands))
 
     def test_pending_restore_does_not_block_root_or_overwrite_setting(self):
         code, result, restore, _, _, activated, commands = self.run_flow(pending=True)
@@ -153,6 +155,28 @@ class WaitCancelTests(unittest.TestCase):
         self.assertEqual(markers, [])
         self.assertIsNone(restore)
         self.assertIn('本次未修改', presentation.root_summary(result)[0])
+
+    def test_default_root_never_reads_or_changes_display_settings(self):
+        code, result, restore, _, _, activated, commands = self.run_flow(keep_awake=False)
+        self.assertEqual(code, 0)
+        self.assertEqual(activated, [True])
+        self.assertIsNone(restore)
+        self.assertEqual(result['display_assistance'], 'disabled')
+        self.assertFalse(any('stay_on_while_plugged_in' in str(c) for c in commands))
+
+    def test_optional_root_preserves_other_charging_sources(self):
+        code, result, restore, _, _, _, commands = self.run_flow(original_setting='4')
+        self.assertEqual(code, 0)
+        self.assertTrue(any('settings put global stay_on_while_plugged_in 6' in str(c) for c in commands))
+        self.assertEqual(restore['original'], '4')
+        self.assertFalse(restore['restore_required'])
+
+    def test_existing_usb_stay_awake_does_not_create_recovery_or_write(self):
+        code, result, restore, _, _, _, commands = self.run_flow(original_setting='2')
+        self.assertEqual(code, 0)
+        self.assertEqual(result['display_assistance'], 'already_enabled')
+        self.assertIsNone(restore)
+        self.assertFalse(any('settings put' in str(c) for c in commands))
 
 
 if __name__ == '__main__':

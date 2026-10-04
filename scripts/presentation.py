@@ -5,7 +5,7 @@ GREEN, AMBER, RED = '#15803d', '#a16207', '#b91c1c'
 def root_summary(result):
     if result.get('outcome') == 'cancelled':
         if result.get('display_restore_error'):
-            return '已取消，未执行 Root；亮屏设置恢复失败，请重新连接后点击取消常亮。', AMBER
+            return '已取消，未执行 Root；临时常亮恢复失败，请连接原手机后点击恢复临时设置。', AMBER
         if result.get('display_restored'):
             return '已取消，未执行 Root；原亮屏设置已恢复。', GREEN
         return '已取消，未执行 Root；本次未修改常亮设置。', GREEN
